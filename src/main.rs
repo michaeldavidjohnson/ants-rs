@@ -4,9 +4,11 @@ use winit::{
     window::WindowBuilder,
 };
 
+mod ant;
 mod instance;
 mod state;
 mod vertex;
+mod world;
 
 #[tokio::main]
 async fn main() {
@@ -16,7 +18,13 @@ async fn main() {
     let window = WindowBuilder::new()
         .build(&event_loop)
         .unwrap();
+
     let mut state = state::State::new(&window).await;
+    let mut world = world::World::new();
+
+    for _ in 0..100 {
+        world.ants.push(ant::Ant::new([0.0, 0.0, 0.0]));
+    }
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -43,7 +51,7 @@ async fn main() {
             }
         },
         Event::RedrawRequested(_) => {
-            state.update();
+            state.update(&mut world);
 
             match state.render() {
                 Ok(_) => {}
