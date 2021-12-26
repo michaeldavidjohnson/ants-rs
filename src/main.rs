@@ -22,7 +22,7 @@ async fn main() {
     let mut state = state::State::new(&window).await;
     let mut world = world::World::new();
 
-    for _ in 0..100 {
+    for _ in 0..20 {
         world.ants.push(ant::Ant::new([0.0, 0.0, 0.0]));
     }
 

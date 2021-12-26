@@ -11,7 +11,11 @@ impl Ant {
         let mut rng = rand::thread_rng();
 
         Ant {
-            position: [0.0, 0.0, 0.0],
+            position: [
+                rng.gen_range(-0.1..0.1),
+                rng.gen_range(-0.1..0.1),
+                0.0
+            ],
             colour: [
                 rng.gen_range(0.0..1.0),
                 rng.gen_range(0.0..1.0),
