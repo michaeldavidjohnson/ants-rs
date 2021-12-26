@@ -250,6 +250,6 @@ impl State {
     }
 
     pub fn input(&mut self, _event: &WindowEvent) -> bool {
-        true
+        false
     }
 }
