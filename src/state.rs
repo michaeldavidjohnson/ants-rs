@@ -10,6 +10,8 @@ use crate::instance::{Instance,InstanceRaw};
 use crate::vertex::Vertex;
 use crate::world::World;
 
+const MAX_INSTANCES: i32 = 5000;
+
 const VERTICES: &[Vertex] = &[
     Vertex {
         position: [0.0, 0.0, 0.0]
@@ -79,13 +81,28 @@ impl State {
             })
         ];
 
-        let instances = Vec::new();
-        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let mut instances = Vec::new();
+
+        for _ in 0..MAX_INSTANCES {
+            instances.push(Instance {
+                position: cgmath::Vector3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                colour: [0.0, 0.0, 0.0]
+            })
+        }
+
+        let instance_data = instances
+            .iter()
+            .map(Instance::to_raw)
+            .collect::<Vec<_>>();
         let instance_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Instance Buffer"),
                 contents: bytemuck::cast_slice(&instance_data),
-                usage: wgpu::BufferUsages::VERTEX,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             }
         );
 
@@ -159,7 +176,7 @@ impl State {
             vertex_buffer,
             index_buffer,
             num_indices,
-            instances,
+            instances: Vec::new(),
             instance_buffer,
             timer: Instant::now(),
         }
@@ -234,14 +251,21 @@ impl State {
                     colour: ant.colour,
                 });
 
-                let instance_data = self.instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+                let over = MAX_INSTANCES - self.instances.len() as i32;
 
-                self.instance_buffer = self.device.create_buffer_init(
-                    &wgpu::util::BufferInitDescriptor {
-                        label: Some("Instance Buffer"),
-                        contents: bytemuck::cast_slice(&instance_data),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    }
+                if over < 0 {
+                    self.instances.drain(0..(-over as usize));
+                }
+
+                let instance_data = self.instances
+                    .iter()
+                    .map(Instance::to_raw)
+                    .collect::<Vec<_>>();
+
+                self.queue.write_buffer(
+                    &self.instance_buffer,
+                    0,
+                    bytemuck::cast_slice(&instance_data),
                 );
             }
 

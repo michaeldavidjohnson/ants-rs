@@ -12,8 +12,8 @@ impl Ant {
 
         Ant {
             position: [
-                rng.gen_range(-0.1..0.1),
-                rng.gen_range(-0.1..0.1),
+                rng.gen_range(-0.25..0.25),
+                rng.gen_range(-0.25..0.25),
                 0.0
             ],
             colour: [
