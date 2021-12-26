@@ -19,9 +19,6 @@ const INDICES: &[u16] = &[
     0
 ];
 
-const NUM_INSTANCES_PER_ROW: u32 = 100;
-const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(NUM_INSTANCES_PER_ROW as f32 * 0.01, NUM_INSTANCES_PER_ROW as f32 * 0.01, 0.0);
-
 pub struct State {
     pub surface: wgpu::Surface,
     pub device: wgpu::Device,
@@ -48,7 +45,7 @@ impl State {
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: Some(&surface),
-                force_fallback_adapter: false
+                force_fallback_adapter: false,
             })
             .await
             .unwrap();
@@ -76,7 +73,7 @@ impl State {
         let shader = [
             device.create_shader_module(&wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into())
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
             })
         ];
 
@@ -121,7 +118,7 @@ impl State {
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
                 polygon_mode: wgpu::PolygonMode::Point,
-                clamp_depth: false,
+                unclipped_depth: false,
                 conservative: false,
             },
             depth_stencil: None,
@@ -130,6 +127,7 @@ impl State {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
+            multiview: None
         });
 
         let vertex_buffer = device.create_buffer_init(
@@ -239,11 +237,11 @@ impl State {
                     VirtualKeyCode::Space => {
                         self.instances.push(Instance {
                             position: cgmath::Vector3 {
-                                x: rng.gen_range(0.0..2.0),
-                                y: rng.gen_range(0.0..2.0),
-                                z: 0.0
-                            } - INSTANCE_DISPLACEMENT,
-                            colour: [0.0, 0.0, 1.0]
+                                x: rng.gen_range(-1.0..1.0),
+                                y: rng.gen_range(-1.0..1.0),
+                                z: 0.0,
+                            },
+                            colour: [0.0, 0.0, 1.0],
                         });
 
                         let instance_data = self.instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
@@ -255,6 +253,7 @@ impl State {
                                 usage: wgpu::BufferUsages::VERTEX,
                             }
                         );
+
                         true
                     }
                     _ => false,
