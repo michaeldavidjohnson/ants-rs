@@ -1,5 +1,4 @@
 use std::iter;
-use std::time::Instant;
 use winit::{
     event::*,
     window::Window,
@@ -8,7 +7,6 @@ use wgpu::util::DeviceExt;
 
 use crate::instance::{Instance,InstanceRaw};
 use crate::vertex::Vertex;
-use crate::world::World;
 
 const MAX_INSTANCES: i32 = 5000;
 
@@ -34,7 +32,6 @@ pub struct State {
     pub num_indices: u32,
     pub instances: Vec<Instance>,
     pub instance_buffer: wgpu::Buffer,
-    pub timer: Instant,
 }
 
 impl State {
@@ -178,7 +175,6 @@ impl State {
             num_indices,
             instances: Vec::new(),
             instance_buffer,
-            timer: Instant::now(),
         }
     }
 
@@ -237,40 +233,30 @@ impl State {
         Ok(())
     }
 
-    pub fn update(&mut self, world: &mut World) {
-        if self.timer.elapsed().as_millis() > 100 {
-            for ant in world.ants.iter_mut() {
-                ant.reposition();
-
-                self.instances.push(Instance {
-                    position: cgmath::Vector3 {
-                        x: ant.position[0],
-                        y: ant.position[1],
-                        z: ant.position[2],
-                    },
-                    colour: ant.colour,
-                });
-
-                let over = MAX_INSTANCES - self.instances.len() as i32;
-
-                if over < 0 {
-                    self.instances.drain(0..(-over as usize));
-                }
-
-                let instance_data = self.instances
-                    .iter()
-                    .map(Instance::to_raw)
-                    .collect::<Vec<_>>();
-
-                self.queue.write_buffer(
-                    &self.instance_buffer,
-                    0,
-                    bytemuck::cast_slice(&instance_data),
-                );
-            }
-
-            self.timer = Instant::now();
+    pub fn update(&mut self, instances: Vec<Instance>) {
+        for instance in instances {
+            self.instances.push(Instance {
+                position: instance.position,
+                colour: instance.colour,
+            });
         }
+
+        let over = MAX_INSTANCES - self.instances.len() as i32;
+
+        if over < 0 {
+            self.instances.drain(0..(-over as usize));
+        }
+
+        let instance_data = self.instances
+            .iter()
+            .map(Instance::to_raw)
+            .collect::<Vec<_>>();
+
+        self.queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(&instance_data),
+        );
     }
 
     pub fn input(&mut self, _event: &WindowEvent) -> bool {

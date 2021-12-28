@@ -22,10 +22,6 @@ async fn main() {
     let mut state = state::State::new(&window).await;
     let mut world = world::World::new();
 
-    for _ in 0..20 {
-        world.ants.push(ant::Ant::new([0.0, 0.0, 0.0]));
-    }
-
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             ref event,
@@ -51,7 +47,7 @@ async fn main() {
             }
         },
         Event::RedrawRequested(_) => {
-            state.update(&mut world);
+            state.update(world.update());
 
             match state.render() {
                 Ok(_) => {}
