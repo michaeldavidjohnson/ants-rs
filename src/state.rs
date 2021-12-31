@@ -8,15 +8,26 @@ use wgpu::util::DeviceExt;
 use crate::instance::{Instance,InstanceRaw};
 use crate::vertex::Vertex;
 
-const MAX_INSTANCES: i32 = 5000;
+const MAX_INSTANCES: i32 = 30000;
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.0, 0.0, 0.0]
-    }
+        position: [-0.001, -0.001, 0.0]
+    },
+    Vertex {
+        position: [-0.001, 0.001, 0.0]
+    },
+    Vertex {
+        position: [0.001, 0.001, 0.0]
+    },
+    Vertex {
+        position: [0.001, -0.001, 0.0]
+    },
 ];
 
 const INDICES: &[u16] = &[
+    0, 3, 1,
+    1, 3, 2,
     0
 ];
 
@@ -37,7 +48,6 @@ pub struct State {
 impl State {
     pub async fn new(window: &Window) -> State {
         let size = window.inner_size();
-
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe {
             instance.create_surface(window)
@@ -50,9 +60,10 @@ impl State {
             })
             .await
             .unwrap();
+
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::POLYGON_MODE_POINT,
+                features: wgpu::Features::default(),
                 limits: wgpu::Limits::default(),
                 label: None,
             },
@@ -129,11 +140,11 @@ impl State {
                 }],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::PointList,
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Point,
+                polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
             },
@@ -183,18 +194,17 @@ impl State {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
+
             self.surface.configure(&self.device, &self.config);
         }
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
+        let view = output.texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self
-            .device
+        let mut encoder = self.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
@@ -233,13 +243,8 @@ impl State {
         Ok(())
     }
 
-    pub fn update(&mut self, instances: Vec<Instance>) {
-        for instance in instances {
-            self.instances.push(Instance {
-                position: instance.position,
-                colour: instance.colour,
-            });
-        }
+    pub fn update(&mut self, mut instances: Vec<Instance>) {
+        self.instances.append(&mut instances);
 
         let over = MAX_INSTANCES - self.instances.len() as i32;
 
@@ -259,7 +264,34 @@ impl State {
         );
     }
 
-    pub fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
+    pub fn input(&mut self, event: &WindowEvent) -> bool {
+        match event {
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state: ElementState::Released,
+                        virtual_keycode: Some(VirtualKeyCode::V),
+                        ..
+                    },
+                ..
+            } => {
+                match self.config.present_mode {
+                    wgpu::PresentMode::Fifo => {
+                        self.config.present_mode = wgpu::PresentMode::Immediate;
+                    }
+                    wgpu::PresentMode::Immediate => {
+                        self.config.present_mode = wgpu::PresentMode::Mailbox;
+                    }
+                    wgpu::PresentMode::Mailbox => {
+                        self.config.present_mode = wgpu::PresentMode::Fifo;
+                    }
+                }
+
+                self.surface.configure(&self.device, &self.config);
+
+                true
+            }
+            _ => false,
+        }
     }
 }
