@@ -14,7 +14,7 @@ impl World {
     pub fn new() -> World {
         let mut ants = Vec::new();
 
-        for _ in 0..20 {
+        for _ in 0..50 {
             ants.push(Ant::new([0.0, 0.0, 0.0]));
         }
 
@@ -28,18 +28,23 @@ impl World {
         let mut instances = Vec::new();
 
         if self.timer.elapsed().as_millis() > UPDATE_INTERVAL {
-            for ant in self.ants.iter_mut() {
-                ant.reposition();
+            let mut new_instances = self.ants
+                .iter_mut()
+                .map(|ant| {
+                    ant.reposition();
 
-                instances.push(Instance {
-                    position: cgmath::Vector3 {
-                        x: ant.position[0],
-                        y: ant.position[1],
-                        z: ant.position[2],
-                    },
-                    colour: ant.colour,
-                });
-            }
+                    Instance {
+                        position: cgmath::Vector3 {
+                            x: ant.position[0],
+                            y: ant.position[1],
+                            z: ant.position[2],
+                        },
+                        colour: ant.colour,
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            instances.append(&mut new_instances);
 
             self.timer = Instant::now();
         }

@@ -16,6 +16,8 @@ async fn main() {
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
+        .with_title("Ants")
+        .with_maximized(true)
         .build(&event_loop)
         .unwrap();
 
